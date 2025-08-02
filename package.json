@@ -1,0 +1,14 @@
+{
+  "name": "ai-assistant-web",
+  "version": "1.0.0",
+  "description": "AI Voice Assistant Web Application",
+  "scripts": {
+    "install": "echo 'Root dependencies installed'",
+    "build": "npm run build:frontend && npm run build:backend",
+    "build:frontend": "cd frontend && npm install && npm run build",
+    "build:backend": "cd backend && npm install && npm run build",
+    "postbuild": "npm run deploy:frontend",
+    "deploy:frontend": "cp -r frontend/dist/* ./"
+  },
+  "private": true
+}

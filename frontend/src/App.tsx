@@ -56,7 +56,7 @@ function App() {
     setIsLoading(true);
 
     try {
-      const response = await axios.post('http://localhost:3001/api/chat', {
+      const response = await axios.post('/api/chat', {
         message: text,
         history: messages
       });
@@ -102,7 +102,7 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <h1>AI Voice Assistant</h1>
+        <h1>AI Voice Assistant - v1.1</h1>
       </header>
       
       <div className="chat-container">
