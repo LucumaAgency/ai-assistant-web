@@ -11,10 +11,11 @@ backend/node_modules/
 .env.production.local
 
 # Build outputs
-dist/
-build/
-frontend/dist/
-backend/dist/
+# Comentados para permitir deployment en Plesk
+# dist/
+# build/
+# frontend/dist/
+# backend/dist/
 
 # Logs
 npm-debug.log*
