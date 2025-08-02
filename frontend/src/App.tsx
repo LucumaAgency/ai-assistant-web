@@ -81,16 +81,15 @@ function App() {
     }
   };
 
-  const startRecording = () => {
-    if (recognitionRef.current && !isRecording) {
+  const toggleRecording = () => {
+    if (!recognitionRef.current) return;
+    
+    if (isRecording) {
+      recognitionRef.current.stop();
+      setIsRecording(false);
+    } else {
       recognitionRef.current.start();
       setIsRecording(true);
-    }
-  };
-
-  const stopRecording = () => {
-    if (recognitionRef.current && isRecording) {
-      recognitionRef.current.stop();
     }
   };
 
@@ -102,7 +101,7 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <h1>AI Voice Assistant - v1.1</h1>
+        <h1>AI Voice Assistant - v1.2</h1>
       </header>
       
       <div className="chat-container">
@@ -118,13 +117,10 @@ function App() {
         <div className="controls">
           <button
             className={`voice-button ${isRecording ? 'recording' : ''}`}
-            onMouseDown={startRecording}
-            onMouseUp={stopRecording}
-            onTouchStart={startRecording}
-            onTouchEnd={stopRecording}
+            onClick={toggleRecording}
             disabled={isLoading}
           >
-            {isRecording ? '🔴 Recording...' : '🎤 Hold to Talk'}
+            {isRecording ? '🔴 Stop Recording' : '🎤 Start Recording'}
           </button>
           
           <button onClick={clearHistory} className="clear-button">
