@@ -11,6 +11,9 @@ function App() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isRecording, setIsRecording] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string>('');
+  const [inputText, setInputText] = useState<string>('');
+  const [showTextInput, setShowTextInput] = useState(false);
   const recognitionRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -31,12 +34,28 @@ function App() {
 
       recognitionRef.current.onresult = async (event: any) => {
         const transcript = event.results[0][0].transcript;
+        console.log('Speech recognized:', transcript);
         await handleUserMessage(transcript);
+        setError('');
       };
 
       recognitionRef.current.onerror = (event: any) => {
         console.error('Speech recognition error', event);
         setIsRecording(false);
+        let errorMessage = 'Error de reconocimiento de voz';
+        if (event.error === 'not-allowed') {
+          errorMessage = 'Permiso de micrófono denegado. Por favor, permite el acceso al micrófono.';
+        } else if (event.error === 'no-speech') {
+          errorMessage = 'No se detectó voz. Intenta de nuevo.';
+        } else if (event.error === 'network') {
+          errorMessage = 'Error de red. Verifica tu conexión.';
+        }
+        setError(errorMessage);
+      };
+
+      recognitionRef.current.onstart = () => {
+        console.log('Speech recognition started');
+        setError('');
       };
 
       recognitionRef.current.onend = () => {
@@ -89,14 +108,22 @@ function App() {
   };
 
   const toggleRecording = () => {
-    if (!recognitionRef.current) return;
+    if (!recognitionRef.current) {
+      setError('El reconocimiento de voz no está disponible en este navegador.');
+      return;
+    }
     
     if (isRecording) {
       recognitionRef.current.stop();
       setIsRecording(false);
     } else {
-      recognitionRef.current.start();
-      setIsRecording(true);
+      try {
+        recognitionRef.current.start();
+        setIsRecording(true);
+      } catch (err) {
+        console.error('Error starting recognition:', err);
+        setError('No se pudo iniciar el reconocimiento de voz. Verifica los permisos.');
+      }
     }
   };
 
@@ -122,6 +149,20 @@ function App() {
           <div ref={messagesEndRef} />
         </div>
         
+        {error && (
+          <div style={{
+            backgroundColor: '#f85149',
+            color: 'white',
+            padding: '10px',
+            borderRadius: '5px',
+            marginBottom: '10px',
+            textAlign: 'center',
+            fontSize: '14px'
+          }}>
+            {error}
+          </div>
+        )}
+        
         <div className="controls">
           <button
             className={`voice-button ${isRecording ? 'recording' : ''}`}
@@ -134,7 +175,54 @@ function App() {
           <button onClick={clearHistory} className="clear-button">
             Clear History
           </button>
+          
+          <button 
+            onClick={() => setShowTextInput(!showTextInput)} 
+            className="clear-button"
+            style={{ marginLeft: '10px' }}
+          >
+            {showTextInput ? 'Hide Text' : 'Text Input'}
+          </button>
         </div>
+        
+        {showTextInput && (
+          <div style={{ marginTop: '10px', display: 'flex', gap: '10px' }}>
+            <input
+              type="text"
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' && inputText.trim()) {
+                  handleUserMessage(inputText.trim());
+                  setInputText('');
+                }
+              }}
+              placeholder="Escribe tu mensaje aquí..."
+              style={{
+                flex: 1,
+                padding: '10px',
+                borderRadius: '5px',
+                border: '1px solid #30363d',
+                backgroundColor: '#161b22',
+                color: '#c9d1d9',
+                fontSize: '16px'
+              }}
+            />
+            <button
+              onClick={() => {
+                if (inputText.trim()) {
+                  handleUserMessage(inputText.trim());
+                  setInputText('');
+                }
+              }}
+              disabled={isLoading || !inputText.trim()}
+              className="voice-button"
+              style={{ width: 'auto' }}
+            >
+              Enviar
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
