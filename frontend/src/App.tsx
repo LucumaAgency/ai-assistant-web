@@ -12,6 +12,7 @@ function App() {
   const [isRecording, setIsRecording] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const recognitionRef = useRef<any>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // Load messages from localStorage
@@ -47,7 +48,13 @@ function App() {
   useEffect(() => {
     // Save messages to localStorage whenever they change
     localStorage.setItem('chatHistory', JSON.stringify(messages));
+    // Scroll to bottom when new messages arrive
+    scrollToBottom();
   }, [messages]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   const handleUserMessage = async (text: string) => {
     const newMessage: Message = { role: 'user', content: text };
@@ -112,6 +119,7 @@ function App() {
             </div>
           ))}
           {isLoading && <div className="message loading">AI is thinking...</div>}
+          <div ref={messagesEndRef} />
         </div>
         
         <div className="controls">
