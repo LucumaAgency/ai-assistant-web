@@ -1,7 +1,7 @@
 /* Reset and base styles */
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+  font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -24,24 +24,26 @@ body {
   flex-direction: column;
   height: 100vh;
   height: 100dvh; /* Dynamic viewport height for mobile */
-  background-color: #0d1117;
-  color: #c9d1d9;
+  background-color: #151718;
+  color: #e0e0e0;
   overflow: hidden;
   position: relative;
 }
 
 .App-header {
-  background-color: #161b22;
+  background-color: #1a1c1e;
   padding: 20px;
-  color: #c9d1d9;
+  color: #e0e0e0;
   text-align: center;
-  border-bottom: 1px solid #30363d;
+  border-bottom: 1px solid #2a2d30;
 }
 
 .App-header h1 {
   margin: 0;
   font-size: 2rem;
-  color: #58a6ff;
+  color: #407bff;
+  font-weight: 600;
+  letter-spacing: -0.5px;
 }
 
 .chat-container {
@@ -61,11 +63,11 @@ body {
   overflow-y: auto;
   overflow-x: hidden;
   padding: 20px;
-  background-color: #161b22;
+  background-color: #1a1c1e;
   border-radius: 10px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
   margin-bottom: 20px;
-  border: 1px solid #30363d;
+  border: 1px solid #2a2d30;
   -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
   min-height: 0; /* Important for flex children */
 }
@@ -76,11 +78,11 @@ body {
 }
 
 .messages::-webkit-scrollbar-track {
-  background: #0d1117;
+  background: #151718;
 }
 
 .messages::-webkit-scrollbar-thumb {
-  background: #30363d;
+  background: #2a2d30;
   border-radius: 4px;
 }
 
@@ -99,28 +101,29 @@ body {
 
 .message strong {
   font-weight: 600;
+  color: #407bff;
 }
 
 .message.user {
-  background-color: #1f6feb;
+  background-color: #407bff;
   color: #ffffff;
   margin-left: 50px;
-  border: 1px solid #388bfd;
+  border: 1px solid #5890ff;
 }
 
 .message.assistant {
-  background-color: #21262d;
-  color: #c9d1d9;
+  background-color: #202225;
+  color: #e0e0e0;
   margin-right: 50px;
-  border: 1px solid #30363d;
+  border: 1px solid #2a2d30;
 }
 
 .message.loading {
-  background-color: #2d333b;
-  color: #f0ad4e;
+  background-color: #252729;
+  color: #407bff;
   text-align: center;
   font-style: italic;
-  border: 1px solid #444c56;
+  border: 1px solid #2a2d30;
 }
 
 .controls {
@@ -130,8 +133,8 @@ body {
 }
 
 .voice-button {
-  background-color: #238636;
-  border: 1px solid #2ea043;
+  background-color: #407bff;
+  border: 1px solid #5890ff;
   color: white;
   padding: 12px 32px;
   text-align: center;
@@ -143,10 +146,11 @@ body {
   cursor: pointer;
   transition: all 0.2s;
   user-select: none;
+  font-family: 'Montserrat', sans-serif;
 }
 
 .voice-button:hover {
-  background-color: #2ea043;
+  background-color: #5890ff;
   transform: scale(1.02);
 }
 
@@ -155,26 +159,26 @@ body {
 }
 
 .voice-button.recording {
-  background-color: #da3633;
-  border-color: #f85149;
+  background-color: #ff4757;
+  border-color: #ff6b7a;
   animation: pulse 1.5s infinite;
 }
 
 .voice-button.recording:hover {
-  background-color: #f85149;
+  background-color: #ff6b7a;
 }
 
 .voice-button:disabled {
-  background-color: #21262d;
-  border-color: #30363d;
-  color: #484f58;
+  background-color: #202225;
+  border-color: #2a2d30;
+  color: #555860;
   cursor: not-allowed;
   opacity: 0.6;
 }
 
 .clear-button {
-  background-color: #6e7681;
-  border: 1px solid #8b949e;
+  background-color: #2a2d30;
+  border: 1px solid #3a3d40;
   color: white;
   padding: 12px 24px;
   text-align: center;
@@ -185,10 +189,11 @@ body {
   border-radius: 50px;
   cursor: pointer;
   transition: all 0.2s;
+  font-family: 'Montserrat', sans-serif;
 }
 
 .clear-button:hover {
-  background-color: #8b949e;
+  background-color: #3a3d40;
   transform: scale(1.02);
 }
 
@@ -205,13 +210,13 @@ body {
 
 @keyframes pulse {
   0% {
-    box-shadow: 0 0 0 0 rgba(248, 81, 73, 0.7);
+    box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.7);
   }
   70% {
-    box-shadow: 0 0 0 15px rgba(248, 81, 73, 0);
+    box-shadow: 0 0 0 15px rgba(255, 71, 87, 0);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(248, 81, 73, 0);
+    box-shadow: 0 0 0 0 rgba(255, 71, 87, 0);
   }
 }
 

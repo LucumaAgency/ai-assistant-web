@@ -151,13 +151,15 @@ function App() {
         
         {error && (
           <div style={{
-            backgroundColor: '#f85149',
-            color: 'white',
-            padding: '10px',
-            borderRadius: '5px',
+            backgroundColor: 'rgba(255, 71, 87, 0.1)',
+            color: '#ff4757',
+            padding: '12px',
+            borderRadius: '8px',
             marginBottom: '10px',
             textAlign: 'center',
-            fontSize: '14px'
+            fontSize: '14px',
+            fontFamily: 'Montserrat, sans-serif',
+            border: '1px solid rgba(255, 71, 87, 0.3)'
           }}>
             {error}
           </div>
@@ -200,13 +202,19 @@ function App() {
               placeholder="Escribe tu mensaje aquí..."
               style={{
                 flex: 1,
-                padding: '10px',
-                borderRadius: '5px',
-                border: '1px solid #30363d',
-                backgroundColor: '#161b22',
-                color: '#c9d1d9',
-                fontSize: '16px'
+                padding: '12px 16px',
+                borderRadius: '25px',
+                border: '1px solid #2a2d30',
+                backgroundColor: '#1a1c1e',
+                color: '#e0e0e0',
+                fontSize: '15px',
+                fontFamily: 'Montserrat, sans-serif',
+                fontWeight: '400',
+                outline: 'none',
+                transition: 'border-color 0.2s'
               }}
+              onFocus={(e) => e.target.style.borderColor = '#407bff'}
+              onBlur={(e) => e.target.style.borderColor = '#2a2d30'}
             />
             <button
               onClick={() => {
