@@ -13,9 +13,9 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>('');
   const [inputText, setInputText] = useState<string>('');
-  const [showTextInput, setShowTextInput] = useState(false);
   const recognitionRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     // Load messages from localStorage
@@ -80,6 +80,7 @@ function App() {
     const updatedMessages = [...messages, newMessage];
     setMessages(updatedMessages);
     setIsLoading(true);
+    setInputText('');
 
     try {
       const response = await axios.post('/api/chat', {
@@ -102,8 +103,10 @@ function App() {
       }
     } catch (error) {
       console.error('Error calling API:', error);
+      setError('Error al conectar con el servidor. Por favor, intenta de nuevo.');
     } finally {
       setIsLoading(false);
+      inputRef.current?.focus();
     }
   };
 
@@ -127,111 +130,124 @@ function App() {
     }
   };
 
-  const clearHistory = () => {
-    setMessages([]);
-    localStorage.removeItem('chatHistory');
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (inputText.trim() && !isLoading) {
+      handleUserMessage(inputText.trim());
+    }
   };
+
+  const hasMessages = messages.length > 0;
 
   return (
     <div className="App">
-      <header className="App-header">
-        <h1>AI Voice Assistant - v1.2</h1>
-      </header>
-      
-      <div className="chat-container">
-        <div className="messages">
-          {messages.map((message, index) => (
-            <div key={index} className={`message ${message.role}`}>
-              <strong>{message.role === 'user' ? 'You' : 'AI'}:</strong> {message.content}
+      {hasMessages ? (
+        <>
+          <div className="chat-view">
+            <div className="messages-container">
+              {messages.map((message, index) => (
+                <div key={index} className={`message ${message.role}`}>
+                  <div className="message-content">
+                    {message.role === 'user' ? (
+                      <span className="message-label">Tú</span>
+                    ) : (
+                      <span className="message-label">AI</span>
+                    )}
+                    <p>{message.content}</p>
+                  </div>
+                </div>
+              ))}
+              {isLoading && (
+                <div className="message assistant">
+                  <div className="message-content">
+                    <span className="message-label">AI</span>
+                    <div className="typing-indicator">
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
             </div>
-          ))}
-          {isLoading && <div className="message loading">AI is thinking...</div>}
-          <div ref={messagesEndRef} />
-        </div>
-        
-        {error && (
-          <div style={{
-            backgroundColor: 'rgba(255, 71, 87, 0.1)',
-            color: '#ff4757',
-            padding: '12px',
-            borderRadius: '8px',
-            marginBottom: '10px',
-            textAlign: 'center',
-            fontSize: '14px',
-            fontFamily: 'Montserrat, sans-serif',
-            border: '1px solid rgba(255, 71, 87, 0.3)'
-          }}>
-            {error}
           </div>
-        )}
-        
-        <div className="controls">
-          <button
-            className={`voice-button ${isRecording ? 'recording' : ''}`}
-            onClick={toggleRecording}
-            disabled={isLoading}
-          >
-            {isRecording ? '🔴 Stop Recording' : '🎤 Start Recording'}
-          </button>
           
-          <button onClick={clearHistory} className="clear-button">
-            Clear History
-          </button>
-          
-          <button 
-            onClick={() => setShowTextInput(!showTextInput)} 
-            className="clear-button"
-            style={{ marginLeft: '10px' }}
-          >
-            {showTextInput ? 'Hide Text' : 'Text Input'}
-          </button>
-        </div>
-        
-        {showTextInput && (
-          <div style={{ marginTop: '10px', display: 'flex', gap: '10px' }}>
-            <input
-              type="text"
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              onKeyPress={(e) => {
-                if (e.key === 'Enter' && inputText.trim()) {
-                  handleUserMessage(inputText.trim());
-                  setInputText('');
-                }
-              }}
-              placeholder="Escribe tu mensaje aquí..."
-              style={{
-                flex: 1,
-                padding: '12px 16px',
-                borderRadius: '25px',
-                border: '1px solid #2a2d30',
-                backgroundColor: '#1a1c1e',
-                color: '#e0e0e0',
-                fontSize: '15px',
-                fontFamily: 'Montserrat, sans-serif',
-                fontWeight: '400',
-                outline: 'none',
-                transition: 'border-color 0.2s'
-              }}
-              onFocus={(e) => e.target.style.borderColor = '#407bff'}
-              onBlur={(e) => e.target.style.borderColor = '#2a2d30'}
-            />
-            <button
-              onClick={() => {
-                if (inputText.trim()) {
-                  handleUserMessage(inputText.trim());
-                  setInputText('');
-                }
-              }}
-              disabled={isLoading || !inputText.trim()}
-              className="voice-button"
-              style={{ width: 'auto' }}
-            >
-              Enviar
-            </button>
+          <div className="input-container bottom">
+            <form onSubmit={handleSubmit} className="input-form">
+              <div className="input-wrapper">
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={inputText}
+                  onChange={(e) => setInputText(e.target.value)}
+                  placeholder="Escribe tu mensaje..."
+                  className="text-input"
+                  disabled={isLoading}
+                />
+                <button
+                  type="button"
+                  onClick={toggleRecording}
+                  className={`mic-button ${isRecording ? 'recording' : ''}`}
+                  disabled={isLoading}
+                  aria-label="Grabar mensaje"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                    <line x1="12" y1="19" x2="12" y2="23"></line>
+                    <line x1="8" y1="23" x2="16" y2="23"></line>
+                  </svg>
+                </button>
+              </div>
+            </form>
           </div>
-        )}
-      </div>
+        </>
+      ) : (
+        <div className="landing-view">
+          <div className="landing-content">
+            <h1 className="landing-title">AI Voice Assistant</h1>
+            <p className="landing-subtitle">¿En qué puedo ayudarte hoy?</p>
+            
+            <div className="input-container centered">
+              <form onSubmit={handleSubmit} className="input-form">
+                <div className="input-wrapper">
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={inputText}
+                    onChange={(e) => setInputText(e.target.value)}
+                    placeholder="Escribe tu mensaje..."
+                    className="text-input"
+                    disabled={isLoading}
+                    autoFocus
+                  />
+                  <button
+                    type="button"
+                    onClick={toggleRecording}
+                    className={`mic-button ${isRecording ? 'recording' : ''}`}
+                    disabled={isLoading}
+                    aria-label="Grabar mensaje"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                      <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                      <line x1="12" y1="19" x2="12" y2="23"></line>
+                      <line x1="8" y1="23" x2="16" y2="23"></line>
+                    </svg>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {error && (
+        <div className="error-toast">
+          {error}
+        </div>
+      )}
     </div>
   );
 }
