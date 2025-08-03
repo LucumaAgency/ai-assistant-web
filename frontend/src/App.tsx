@@ -5,23 +5,63 @@ import './App.css';
 interface Message {
   role: 'user' | 'assistant';
   content: string;
+  timestamp: string;
 }
 
+interface Chat {
+  id: string;
+  messages: Message[];
+  folderId: string | null;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface Folder {
+  id: string;
+  name: string;
+  color: string;
+}
+
+const DEFAULT_FOLDERS: Folder[] = [
+  { id: 'trabajo', name: 'Trabajo', color: '#407bff' },
+  { id: 'fitness', name: 'Fitness', color: '#00c896' },
+  { id: 'personal', name: 'Personal', color: '#ff6b6b' },
+  { id: 'ideas', name: 'Ideas', color: '#9c27b0' },
+];
+
 function App() {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [chats, setChats] = useState<Chat[]>([]);
+  const [folders, setFolders] = useState<Folder[]>(DEFAULT_FOLDERS);
+  const [currentChatId, setCurrentChatId] = useState<string | null>(null);
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>('');
   const [inputText, setInputText] = useState<string>('');
+  const [showSidebar, setShowSidebar] = useState(false);
+  const [showFolderModal, setShowFolderModal] = useState(false);
   const recognitionRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const currentChat = chats.find(chat => chat.id === currentChatId);
+  const messages = currentChat?.messages || [];
+
   useEffect(() => {
-    // Load messages from localStorage
-    const savedMessages = localStorage.getItem('chatHistory');
-    if (savedMessages) {
-      setMessages(JSON.parse(savedMessages));
+    // Load data from localStorage
+    const savedChats = localStorage.getItem('chats');
+    const savedFolders = localStorage.getItem('folders');
+    const savedCurrentChatId = localStorage.getItem('currentChatId');
+    
+    if (savedChats) {
+      setChats(JSON.parse(savedChats));
+    }
+    if (savedFolders) {
+      setFolders(JSON.parse(savedFolders));
+    }
+    if (savedCurrentChatId) {
+      setCurrentChatId(savedCurrentChatId);
     }
 
     // Initialize Web Speech API
@@ -30,7 +70,7 @@ function App() {
       recognitionRef.current = new SpeechRecognition();
       recognitionRef.current.continuous = false;
       recognitionRef.current.interimResults = false;
-      recognitionRef.current.lang = 'es-ES'; // Change to 'en-US' for English
+      recognitionRef.current.lang = 'es-ES';
 
       recognitionRef.current.onresult = async (event: any) => {
         const transcript = event.results[0][0].transcript;
@@ -65,9 +105,15 @@ function App() {
   }, []);
 
   useEffect(() => {
-    // Save messages to localStorage whenever they change
-    localStorage.setItem('chatHistory', JSON.stringify(messages));
-    // Scroll to bottom when new messages arrive
+    // Save data to localStorage
+    localStorage.setItem('chats', JSON.stringify(chats));
+    localStorage.setItem('folders', JSON.stringify(folders));
+    if (currentChatId) {
+      localStorage.setItem('currentChatId', currentChatId);
+    }
+  }, [chats, folders, currentChatId]);
+
+  useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
@@ -75,30 +121,81 @@ function App() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const createNewChat = (folderId: string | null = null) => {
+    const newChat: Chat = {
+      id: Date.now().toString(),
+      messages: [],
+      folderId,
+      title: 'Nueva conversación',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    setChats([...chats, newChat]);
+    setCurrentChatId(newChat.id);
+    return newChat.id;
+  };
+
   const handleUserMessage = async (text: string) => {
-    const newMessage: Message = { role: 'user', content: text };
-    const updatedMessages = [...messages, newMessage];
-    setMessages(updatedMessages);
+    let chatId = currentChatId;
+    
+    // Create new chat if none exists
+    if (!chatId) {
+      chatId = createNewChat(selectedFolderId);
+    }
+
+    const newMessage: Message = { 
+      role: 'user', 
+      content: text,
+      timestamp: new Date().toISOString()
+    };
+
+    // Update chat with new message
+    const updatedChats = chats.map(chat => {
+      if (chat.id === chatId) {
+        const updatedChat = {
+          ...chat,
+          messages: [...chat.messages, newMessage],
+          updatedAt: new Date().toISOString(),
+          title: chat.messages.length === 0 ? text.substring(0, 50) : chat.title
+        };
+        return updatedChat;
+      }
+      return chat;
+    });
+
+    setChats(updatedChats);
     setIsLoading(true);
     setInputText('');
 
     try {
+      const currentChat = updatedChats.find(chat => chat.id === chatId);
       const response = await axios.post('/api/chat', {
         message: text,
-        history: messages
+        history: currentChat?.messages.slice(-10) || []
       });
 
       const assistantMessage: Message = {
         role: 'assistant',
-        content: response.data.message
+        content: response.data.message,
+        timestamp: new Date().toISOString()
       };
 
-      setMessages([...updatedMessages, assistantMessage]);
+      // Update chat with assistant response
+      setChats(prevChats => prevChats.map(chat => {
+        if (chat.id === chatId) {
+          return {
+            ...chat,
+            messages: [...chat.messages, assistantMessage],
+            updatedAt: new Date().toISOString()
+          };
+        }
+        return chat;
+      }));
       
       // Text to speech
       if ('speechSynthesis' in window) {
         const utterance = new SpeechSynthesisUtterance(response.data.message);
-        utterance.lang = 'es-ES'; // Change to 'en-US' for English
+        utterance.lang = 'es-ES';
         window.speechSynthesis.speak(utterance);
       }
     } catch (error) {
@@ -137,12 +234,176 @@ function App() {
     }
   };
 
+  const selectChat = (chatId: string) => {
+    setCurrentChatId(chatId);
+    setShowSidebar(false);
+  };
+
+  const deleteChat = (chatId: string) => {
+    setChats(chats.filter(chat => chat.id !== chatId));
+    if (currentChatId === chatId) {
+      setCurrentChatId(null);
+    }
+  };
+
+  const assignChatToFolder = (chatId: string, folderId: string | null) => {
+    setChats(chats.map(chat => 
+      chat.id === chatId ? { ...chat, folderId } : chat
+    ));
+  };
+
+  const filteredChats = selectedFolderId 
+    ? chats.filter(chat => chat.folderId === selectedFolderId)
+    : chats;
+
   const hasMessages = messages.length > 0;
 
   return (
     <div className="App">
+      <button 
+        className="menu-button"
+        onClick={() => setShowSidebar(!showSidebar)}
+      >
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+
+      {showSidebar && (
+        <div className="sidebar">
+          <div className="sidebar-header">
+            <h2>Conversaciones</h2>
+            <button 
+              className="new-chat-button"
+              onClick={() => {
+                createNewChat(selectedFolderId);
+                setShowSidebar(false);
+              }}
+            >
+              Nueva
+            </button>
+          </div>
+
+          <div className="folders-section">
+            <div className="folders-header">
+              <h3>Carpetas</h3>
+              <button 
+                className="add-folder-button"
+                onClick={() => setShowFolderModal(true)}
+              >
+                +
+              </button>
+            </div>
+            <div className="folders-list">
+              <button
+                className={`folder-item ${selectedFolderId === null ? 'active' : ''}`}
+                onClick={() => setSelectedFolderId(null)}
+              >
+                <span className="folder-icon" style={{ backgroundColor: '#606060' }}>📁</span>
+                Todas
+              </button>
+              {folders.map(folder => (
+                <button
+                  key={folder.id}
+                  className={`folder-item ${selectedFolderId === folder.id ? 'active' : ''}`}
+                  onClick={() => setSelectedFolderId(folder.id)}
+                >
+                  <span className="folder-icon" style={{ backgroundColor: folder.color }}>📁</span>
+                  {folder.name}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="chats-list">
+            {filteredChats.length === 0 ? (
+              <div className="empty-chats">No hay conversaciones</div>
+            ) : (
+              filteredChats.map(chat => (
+                <div 
+                  key={chat.id} 
+                  className={`chat-item ${chat.id === currentChatId ? 'active' : ''}`}
+                  onClick={() => selectChat(chat.id)}
+                >
+                  <div className="chat-item-content">
+                    <div className="chat-title">{chat.title}</div>
+                    <div className="chat-date">
+                      {new Date(chat.updatedAt).toLocaleDateString()}
+                    </div>
+                  </div>
+                  <button 
+                    className="delete-chat-button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteChat(chat.id);
+                    }}
+                  >
+                    🗑️
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+
+      {currentChat && showFolderModal && (
+        <div className="modal-overlay" onClick={() => setShowFolderModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h3>Asignar a carpeta</h3>
+            <div className="folder-options">
+              <button
+                className="folder-option"
+                onClick={() => {
+                  assignChatToFolder(currentChat.id, null);
+                  setShowFolderModal(false);
+                }}
+              >
+                Sin carpeta
+              </button>
+              {folders.map(folder => (
+                <button
+                  key={folder.id}
+                  className="folder-option"
+                  onClick={() => {
+                    assignChatToFolder(currentChat.id, folder.id);
+                    setShowFolderModal(false);
+                  }}
+                >
+                  <span style={{ color: folder.color }}>●</span> {folder.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {hasMessages ? (
         <>
+          <div className="chat-header">
+            <div className="chat-info">
+              <h3>{currentChat?.title}</h3>
+              {currentChat?.folderId && (
+                <span 
+                  className="folder-tag"
+                  style={{ 
+                    backgroundColor: folders.find(f => f.id === currentChat.folderId)?.color 
+                  }}
+                >
+                  {folders.find(f => f.id === currentChat.folderId)?.name}
+                </span>
+              )}
+            </div>
+            <button 
+              className="folder-assign-button"
+              onClick={() => setShowFolderModal(true)}
+            >
+              📁
+            </button>
+          </div>
+          
           <div className="chat-view">
             <div className="messages-container">
               {messages.map((message, index) => (
