@@ -142,6 +142,9 @@ function App() {
     if (!chatId) {
       chatId = createNewChat(selectedFolderId);
     }
+    
+    console.log('Handling message for chat:', chatId);
+    console.log('Current chats:', chats);
 
     const newMessage: Message = { 
       role: 'user', 
@@ -150,15 +153,33 @@ function App() {
     };
 
     // Update chat with new message
-    const updatedChats = chats.map(chat => {
+    // Find the current chat first, or create it if it doesn't exist
+    let workingChats = [...chats];
+    let workingChat = workingChats.find(chat => chat.id === chatId);
+    
+    if (!workingChat) {
+      // This shouldn't happen, but just in case
+      const newChat: Chat = {
+        id: chatId,
+        messages: [],
+        folderId: selectedFolderId,
+        title: text.substring(0, 50),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      workingChats.push(newChat);
+      workingChat = newChat;
+    }
+
+    // Update chat with new message
+    const updatedChats = workingChats.map(chat => {
       if (chat.id === chatId) {
-        const updatedChat = {
+        return {
           ...chat,
           messages: [...chat.messages, newMessage],
           updatedAt: new Date().toISOString(),
           title: chat.messages.length === 0 ? text.substring(0, 50) : chat.title
         };
-        return updatedChat;
       }
       return chat;
     });
@@ -168,10 +189,10 @@ function App() {
     setInputText('');
 
     try {
-      const currentChat = updatedChats.find(chat => chat.id === chatId);
+      const chatForApi = updatedChats.find(chat => chat.id === chatId);
       const response = await axios.post('/api/chat', {
         message: text,
-        history: currentChat?.messages.slice(-10) || []
+        history: chatForApi?.messages.slice(-10) || []
       });
 
       const assistantMessage: Message = {
@@ -181,16 +202,22 @@ function App() {
       };
 
       // Update chat with assistant response
-      setChats(prevChats => prevChats.map(chat => {
-        if (chat.id === chatId) {
-          return {
-            ...chat,
-            messages: [...chat.messages, assistantMessage],
-            updatedAt: new Date().toISOString()
-          };
-        }
-        return chat;
-      }));
+      const finalChatId = chatId; // Capture the chatId in a const to avoid closure issues
+      setChats(prevChats => {
+        console.log('Updating chats with assistant response for chat:', finalChatId);
+        return prevChats.map(chat => {
+          if (chat.id === finalChatId) {
+            const updatedChat = {
+              ...chat,
+              messages: [...chat.messages, assistantMessage],
+              updatedAt: new Date().toISOString()
+            };
+            console.log('Updated chat messages:', updatedChat.messages);
+            return updatedChat;
+          }
+          return chat;
+        });
+      });
       
       // Text to speech
       if ('speechSynthesis' in window) {
