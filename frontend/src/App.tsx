@@ -327,15 +327,27 @@ function App() {
         <div className="sidebar" ref={sidebarRef}>
           <div className="sidebar-header">
             <h2>Conversaciones</h2>
-            <button 
-              className="new-chat-button"
-              onClick={() => {
-                createNewChat();
-                setShowSidebar(false);
-              }}
-            >
-              Nueva
-            </button>
+            <div className="sidebar-header-buttons">
+              <button 
+                className="new-chat-button"
+                onClick={() => {
+                  createNewChat();
+                  setShowSidebar(false);
+                }}
+              >
+                Nueva
+              </button>
+              <button 
+                className="close-sidebar-button"
+                onClick={() => setShowSidebar(false)}
+                aria-label="Cerrar sidebar"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
           </div>
 
           <div className="folders-section">
@@ -434,28 +446,6 @@ function App() {
 
       {hasMessages ? (
         <>
-          <div className="chat-header">
-            <div className="chat-info">
-              <h3>{currentChat?.title}</h3>
-              {currentChat?.folderId && (
-                <span 
-                  className="folder-tag"
-                  style={{ 
-                    backgroundColor: folders.find(f => f.id === currentChat.folderId)?.color 
-                  }}
-                >
-                  {folders.find(f => f.id === currentChat.folderId)?.name}
-                </span>
-              )}
-            </div>
-            <button 
-              className="folder-assign-button"
-              onClick={() => setShowFolderModal(true)}
-            >
-              📁
-            </button>
-          </div>
-          
           <div className="chat-view">
             <div className="messages-container">
               {messages.map((message, index) => (

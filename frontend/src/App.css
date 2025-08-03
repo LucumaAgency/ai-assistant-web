@@ -391,6 +391,12 @@ body {
   font-weight: 600;
 }
 
+.sidebar-header-buttons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
 .new-chat-button {
   background: #407bff;
   border: none;
@@ -406,6 +412,24 @@ body {
 
 .new-chat-button:hover {
   background: #5890ff;
+}
+
+.close-sidebar-button {
+  background: none;
+  border: none;
+  color: #606060;
+  padding: 8px;
+  cursor: pointer;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.close-sidebar-button:hover {
+  background: #2a2d30;
+  color: #e0e0e0;
 }
 
 /* Folders section */
@@ -566,51 +590,7 @@ body {
   color: #ff4757;
 }
 
-/* Chat header */
-.chat-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 20px;
-  background: #1a1c1e;
-  border-bottom: 1px solid #2a2d30;
-  margin-left: 60px;
-}
-
-.chat-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.chat-info h3 {
-  margin: 0;
-  font-size: 1.1rem;
-  color: #e0e0e0;
-  font-weight: 500;
-}
-
-.folder-tag {
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 12px;
-  color: white;
-  font-weight: 500;
-}
-
-.folder-assign-button {
-  background: none;
-  border: none;
-  font-size: 20px;
-  cursor: pointer;
-  padding: 8px;
-  border-radius: 6px;
-  transition: background 0.2s;
-}
-
-.folder-assign-button:hover {
-  background: #2a2d30;
-}
+/* Chat header - removed */
 
 /* Modal */
 .modal-overlay {
@@ -695,10 +675,6 @@ body {
 @media (max-width: 768px) {
   .sidebar {
     width: 100%;
-  }
-  
-  .chat-header {
-    margin-left: 50px;
   }
   
   .modal-content {
