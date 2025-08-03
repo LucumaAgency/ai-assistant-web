@@ -44,6 +44,8 @@ function App() {
   const recognitionRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  const touchStartX = useRef<number>(0);
 
   const currentChat = chats.find(chat => chat.id === currentChatId);
   const messages = currentChat?.messages || [];
@@ -117,6 +119,34 @@ function App() {
     scrollToBottom();
   }, [messages]);
 
+  // Handle swipe to close sidebar on mobile
+  useEffect(() => {
+    if (!showSidebar || !sidebarRef.current) return;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartX.current = e.touches[0].clientX;
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      const touchEndX = e.touches[0].clientX;
+      const diff = touchStartX.current - touchEndX;
+      
+      // If swiped left more than 50px, close sidebar
+      if (diff > 50) {
+        setShowSidebar(false);
+      }
+    };
+
+    const sidebar = sidebarRef.current;
+    sidebar.addEventListener('touchstart', handleTouchStart);
+    sidebar.addEventListener('touchmove', handleTouchMove);
+
+    return () => {
+      sidebar.removeEventListener('touchstart', handleTouchStart);
+      sidebar.removeEventListener('touchmove', handleTouchMove);
+    };
+  }, [showSidebar]);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -125,7 +155,7 @@ function App() {
     const newChat: Chat = {
       id: Date.now().toString(),
       messages: [],
-      folderId,
+      folderId: folderId || selectedFolderId,
       title: 'Nueva conversación',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -140,7 +170,7 @@ function App() {
     
     // Create new chat if none exists
     if (!chatId) {
-      chatId = createNewChat(selectedFolderId);
+      chatId = createNewChat();
     }
     
     console.log('Handling message for chat:', chatId);
@@ -219,12 +249,7 @@ function App() {
         });
       });
       
-      // Text to speech
-      if ('speechSynthesis' in window) {
-        const utterance = new SpeechSynthesisUtterance(response.data.message);
-        utterance.lang = 'es-ES';
-        window.speechSynthesis.speak(utterance);
-      }
+      // Text to speech removed per user request
     } catch (error) {
       console.error('Error calling API:', error);
       setError('Error al conectar con el servidor. Por favor, intenta de nuevo.');
@@ -299,13 +324,13 @@ function App() {
       </button>
 
       {showSidebar && (
-        <div className="sidebar">
+        <div className="sidebar" ref={sidebarRef}>
           <div className="sidebar-header">
             <h2>Conversaciones</h2>
             <button 
               className="new-chat-button"
               onClick={() => {
-                createNewChat(selectedFolderId);
+                createNewChat();
                 setShowSidebar(false);
               }}
             >
