@@ -41,6 +41,7 @@ function App() {
   const [inputText, setInputText] = useState<string>('');
   const [showSidebar, setShowSidebar] = useState(false);
   const [showFolderModal, setShowFolderModal] = useState(false);
+  const [chatMenuOpen, setChatMenuOpen] = useState<string | null>(null);
   const recognitionRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -118,6 +119,18 @@ function App() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Close chat menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (chatMenuOpen && !(e.target as HTMLElement).closest('.chat-menu-wrapper')) {
+        setChatMenuOpen(null);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [chatMenuOpen]);
 
   // Handle swipe to close sidebar on mobile
   useEffect(() => {
@@ -326,7 +339,7 @@ function App() {
       {showSidebar && (
         <div className="sidebar" ref={sidebarRef}>
           <div className="sidebar-header">
-            <h2>Conversaciones</h2>
+            <h2>Chats</h2>
             <div className="sidebar-header-buttons">
               <button 
                 className="new-chat-button"
@@ -397,15 +410,46 @@ function App() {
                       {new Date(chat.updatedAt).toLocaleDateString()}
                     </div>
                   </div>
-                  <button 
-                    className="delete-chat-button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      deleteChat(chat.id);
-                    }}
-                  >
-                    🗑️
-                  </button>
+                  <div className="chat-menu-wrapper">
+                    <button 
+                      className="chat-menu-button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setChatMenuOpen(chatMenuOpen === chat.id ? null : chat.id);
+                      }}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <circle cx="12" cy="5" r="2"></circle>
+                        <circle cx="12" cy="12" r="2"></circle>
+                        <circle cx="12" cy="19" r="2"></circle>
+                      </svg>
+                    </button>
+                    {chatMenuOpen === chat.id && (
+                      <div className="chat-menu-dropdown">
+                        <button
+                          className="chat-menu-option"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCurrentChatId(chat.id);
+                            setShowFolderModal(true);
+                            setChatMenuOpen(null);
+                          }}
+                        >
+                          📁 Asignar carpeta
+                        </button>
+                        <button
+                          className="chat-menu-option delete"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteChat(chat.id);
+                            setChatMenuOpen(null);
+                          }}
+                        >
+                          🗑️ Eliminar
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               ))
             )}
