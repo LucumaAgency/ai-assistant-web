@@ -233,7 +233,7 @@ function App() {
 
     try {
       const chatForApi = updatedChats.find(chat => chat.id === chatId);
-      const response = await axios.post('/api/chat', {
+      const response = await axios.post('https://ai-assistant-web-backend.onrender.com/api/chat', {
         message: text,
         history: chatForApi?.messages.slice(-10) || []
       });
