@@ -9,18 +9,24 @@ interface Message {
 }
 
 interface Chat {
-  id: string;
+  id: string | number;
   messages: Message[];
-  folderId: string | null;
+  folderId: string | number | null;
+  folder_id?: string | number | null; // For DB compatibility
   title: string;
   createdAt: string;
+  created_at?: string; // For DB compatibility
   updatedAt: string;
+  updated_at?: string; // For DB compatibility
+  user_id?: number;
 }
 
 interface Folder {
-  id: string;
+  id: string | number;
   name: string;
   color: string;
+  system_prompt?: string;
+  user_id?: number;
 }
 
 const DEFAULT_FOLDERS: Folder[] = [
@@ -33,15 +39,16 @@ const DEFAULT_FOLDERS: Folder[] = [
 function App() {
   const [chats, setChats] = useState<Chat[]>([]);
   const [folders, setFolders] = useState<Folder[]>(DEFAULT_FOLDERS);
-  const [currentChatId, setCurrentChatId] = useState<string | null>(null);
-  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
+  const [currentChatId, setCurrentChatId] = useState<string | number | null>(null);
+  const [selectedFolderId, setSelectedFolderId] = useState<string | number | null>(null);
+  const [userId] = useState<number>(1); // Hardcoded for now, will use auth later
   const [isRecording, setIsRecording] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>('');
   const [inputText, setInputText] = useState<string>('');
   const [showSidebar, setShowSidebar] = useState(false);
   const [showFolderModal, setShowFolderModal] = useState(false);
-  const [chatMenuOpen, setChatMenuOpen] = useState<string | null>(null);
+  const [chatMenuOpen, setChatMenuOpen] = useState<string | number | null>(null);
   const recognitionRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -52,20 +59,8 @@ function App() {
   const messages = currentChat?.messages || [];
 
   useEffect(() => {
-    // Load data from localStorage
-    const savedChats = localStorage.getItem('chats');
-    const savedFolders = localStorage.getItem('folders');
-    const savedCurrentChatId = localStorage.getItem('currentChatId');
-    
-    if (savedChats) {
-      setChats(JSON.parse(savedChats));
-    }
-    if (savedFolders) {
-      setFolders(JSON.parse(savedFolders));
-    }
-    if (savedCurrentChatId) {
-      setCurrentChatId(savedCurrentChatId);
-    }
+    // Load data from API
+    loadUserData();
 
     // Initialize Web Speech API
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
@@ -107,14 +102,54 @@ function App() {
     }
   }, []);
 
-  useEffect(() => {
-    // Save data to localStorage
-    localStorage.setItem('chats', JSON.stringify(chats));
-    localStorage.setItem('folders', JSON.stringify(folders));
-    if (currentChatId) {
-      localStorage.setItem('currentChatId', currentChatId);
+  const loadUserData = async () => {
+    try {
+      // Load folders
+      const foldersResponse = await axios.get(`https://ai-assistant-web-backend.onrender.com/api/users/${userId}/folders`);
+      setFolders(foldersResponse.data);
+      
+      // Load chats
+      const chatsResponse = await axios.get(`https://ai-assistant-web-backend.onrender.com/api/users/${userId}/chats`);
+      const chatsData = chatsResponse.data;
+      
+      // For each chat, load its messages
+      const chatsWithMessages = await Promise.all(
+        chatsData.map(async (chat: any) => {
+          const messagesResponse = await axios.get(`https://ai-assistant-web-backend.onrender.com/api/chats/${chat.id}/messages`);
+          return {
+            ...chat,
+            folderId: chat.folder_id,
+            createdAt: chat.created_at,
+            updatedAt: chat.updated_at,
+            messages: messagesResponse.data.map((msg: any) => ({
+              role: msg.role,
+              content: msg.content,
+              timestamp: msg.timestamp
+            }))
+          };
+        })
+      );
+      
+      setChats(chatsWithMessages);
+      
+      // Restore last chat if available
+      const savedCurrentChatId = localStorage.getItem('currentChatId');
+      if (savedCurrentChatId) {
+        setCurrentChatId(Number(savedCurrentChatId) || savedCurrentChatId);
+      }
+    } catch (error) {
+      console.error('Error loading user data:', error);
+      // Fallback to default folders if API fails
+      setFolders(DEFAULT_FOLDERS);
     }
-  }, [chats, folders, currentChatId]);
+  };
+
+  useEffect(() => {
+    // Save current chat ID to localStorage for persistence
+    if (currentChatId) {
+      localStorage.setItem('currentChatId', String(currentChatId));
+    }
+  }, [currentChatId]);
 
   useEffect(() => {
     scrollToBottom();
@@ -164,18 +199,40 @@ function App() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const createNewChat = (folderId: string | null = null) => {
-    const newChat: Chat = {
-      id: Date.now().toString(),
-      messages: [],
-      folderId: folderId || selectedFolderId,
-      title: 'Nueva conversación',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    setChats([...chats, newChat]);
-    setCurrentChatId(newChat.id);
-    return newChat.id;
+  const createNewChat = async (folderId: string | number | null = null) => {
+    try {
+      const response = await axios.post('https://ai-assistant-web-backend.onrender.com/api/chats', {
+        user_id: userId,
+        folder_id: folderId || selectedFolderId,
+        title: 'Nueva conversación'
+      });
+      
+      const newChat: Chat = {
+        ...response.data,
+        folderId: response.data.folder_id,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        messages: []
+      };
+      
+      setChats([...chats, newChat]);
+      setCurrentChatId(newChat.id);
+      return newChat.id;
+    } catch (error) {
+      console.error('Error creating new chat:', error);
+      // Fallback to local creation
+      const newChat: Chat = {
+        id: Date.now(),
+        messages: [],
+        folderId: folderId || selectedFolderId,
+        title: 'Nueva conversación',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      setChats([...chats, newChat]);
+      setCurrentChatId(newChat.id);
+      return newChat.id;
+    }
   };
 
   const handleUserMessage = async (text: string) => {
@@ -183,7 +240,7 @@ function App() {
     
     // Create new chat if none exists
     if (!chatId) {
-      chatId = createNewChat();
+      chatId = await createNewChat();
     }
     
     console.log('Handling message for chat:', chatId);
@@ -235,7 +292,9 @@ function App() {
       const chatForApi = updatedChats.find(chat => chat.id === chatId);
       const response = await axios.post('https://ai-assistant-web-backend.onrender.com/api/chat', {
         message: text,
-        history: chatForApi?.messages.slice(-10) || []
+        history: chatForApi?.messages.slice(-10) || [],
+        chatId: chatId,
+        folderId: chatForApi?.folderId || chatForApi?.folder_id
       });
 
       const assistantMessage: Message = {
@@ -299,22 +358,47 @@ function App() {
     }
   };
 
-  const selectChat = (chatId: string) => {
+  const selectChat = (chatId: string | number) => {
     setCurrentChatId(chatId);
     setShowSidebar(false);
   };
 
-  const deleteChat = (chatId: string) => {
-    setChats(chats.filter(chat => chat.id !== chatId));
-    if (currentChatId === chatId) {
-      setCurrentChatId(null);
+  const deleteChat = async (chatId: string | number) => {
+    try {
+      await axios.delete(`https://ai-assistant-web-backend.onrender.com/api/chats/${chatId}`);
+      setChats(chats.filter(chat => chat.id !== chatId));
+      if (currentChatId === chatId) {
+        setCurrentChatId(null);
+      }
+    } catch (error) {
+      console.error('Error deleting chat:', error);
+      // Still remove from local state
+      setChats(chats.filter(chat => chat.id !== chatId));
+      if (currentChatId === chatId) {
+        setCurrentChatId(null);
+      }
     }
   };
 
-  const assignChatToFolder = (chatId: string, folderId: string | null) => {
-    setChats(chats.map(chat => 
-      chat.id === chatId ? { ...chat, folderId } : chat
-    ));
+  const assignChatToFolder = async (chatId: string | number, folderId: string | number | null) => {
+    try {
+      const chat = chats.find(c => c.id === chatId);
+      if (chat) {
+        await axios.put(`https://ai-assistant-web-backend.onrender.com/api/chats/${chatId}`, {
+          folder_id: folderId,
+          title: chat.title
+        });
+      }
+      setChats(chats.map(chat => 
+        chat.id === chatId ? { ...chat, folderId } : chat
+      ));
+    } catch (error) {
+      console.error('Error updating chat folder:', error);
+      // Still update local state
+      setChats(chats.map(chat => 
+        chat.id === chatId ? { ...chat, folderId } : chat
+      ));
+    }
   };
 
   const filteredChats = selectedFolderId 
@@ -343,8 +427,8 @@ function App() {
             <div className="sidebar-header-buttons">
               <button 
                 className="new-chat-button"
-                onClick={() => {
-                  createNewChat();
+                onClick={async () => {
+                  await createNewChat();
                   setShowSidebar(false);
                 }}
               >

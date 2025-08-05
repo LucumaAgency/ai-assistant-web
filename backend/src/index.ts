@@ -2,6 +2,9 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import OpenAI from 'openai';
+import pool from './config/database';
+import foldersRouter from './routes/folders';
+import chatsRouter from './routes/chats';
 
 dotenv.config();
 
@@ -41,17 +44,24 @@ app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'ok', 
     timestamp: new Date().toISOString(),
-    apiKeyConfigured: !!(process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== 'your-openai-api-key-here')
+    apiKeyConfigured: !!(process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== 'your-openai-api-key-here'),
+    databaseConnected: true
   });
 });
+
+// API Routes
+app.use('/api', foldersRouter);
+app.use('/api', chatsRouter);
 
 app.post('/api/chat', async (req, res) => {
   console.log('=== CHAT ENDPOINT HIT ===');
   
   try {
-    const { message, history } = req.body;
+    const { message, history, chatId, folderId } = req.body;
     console.log('Received message:', message);
     console.log('History length:', history?.length || 0);
+    console.log('Chat ID:', chatId);
+    console.log('Folder ID:', folderId);
 
     if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY === 'your-openai-api-key-here') {
       console.error('API Key not configured properly');
@@ -60,13 +70,31 @@ app.post('/api/chat', async (req, res) => {
       });
     }
 
+    // Get system prompt from folder if folderId is provided
+    let systemPrompt = 'You are a helpful AI assistant.';
+    if (folderId) {
+      try {
+        const [folderRows] = await pool.execute(
+          'SELECT system_prompt FROM folders WHERE id = ?',
+          [folderId]
+        );
+        const folder = (folderRows as any[])[0];
+        if (folder && folder.system_prompt) {
+          systemPrompt = folder.system_prompt;
+          console.log('Using custom system prompt from folder:', systemPrompt);
+        }
+      } catch (err) {
+        console.error('Error fetching folder system prompt:', err);
+      }
+    }
+
     const messages = [
-      { role: 'system', content: 'You are a helpful AI assistant.' },
+      { role: 'system', content: systemPrompt },
       ...history,
       { role: 'user', content: message }
     ];
 
-    console.log('Calling OpenAI API...');
+    console.log('Calling OpenAI API with system prompt:', systemPrompt.substring(0, 50) + '...');
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: messages as any,
@@ -74,6 +102,49 @@ app.post('/api/chat', async (req, res) => {
 
     const assistantMessage = completion.choices[0].message.content;
     console.log('OpenAI response received, length:', assistantMessage?.length);
+
+    // Save messages to database if chatId is provided
+    if (chatId) {
+      try {
+        // Save user message
+        await pool.execute(
+          'INSERT INTO messages (chat_id, role, content, timestamp) VALUES (?, ?, ?, NOW())',
+          [chatId, 'user', message]
+        );
+        
+        // Save assistant message
+        await pool.execute(
+          'INSERT INTO messages (chat_id, role, content, timestamp) VALUES (?, ?, ?, NOW())',
+          [chatId, 'assistant', assistantMessage]
+        );
+        
+        // Update chat's updated_at and title if it's the first message
+        const [chatRows] = await pool.execute(
+          'SELECT title FROM chats WHERE id = ?',
+          [chatId]
+        );
+        const chat = (chatRows as any[])[0];
+        
+        if (chat && (chat.title === 'Nueva conversación' || !chat.title)) {
+          // Update title with first message (truncated to 50 chars)
+          const newTitle = message.substring(0, 50);
+          await pool.execute(
+            'UPDATE chats SET title = ?, updated_at = NOW() WHERE id = ?',
+            [newTitle, chatId]
+          );
+        } else {
+          // Just update the timestamp
+          await pool.execute(
+            'UPDATE chats SET updated_at = NOW() WHERE id = ?',
+            [chatId]
+          );
+        }
+        
+        console.log('Messages saved to database');
+      } catch (err) {
+        console.error('Error saving messages to database:', err);
+      }
+    }
 
     res.json({ message: assistantMessage });
   } catch (error: any) {
