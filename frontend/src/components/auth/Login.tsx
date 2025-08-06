@@ -2,16 +2,16 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './Auth.css';
 
-const ForgotPassword = () => {
+const Login = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    email: ''
+    email: '',
+    password: ''
   });
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState<any>({});
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
 
-  const handleChange = (e) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -34,10 +34,14 @@ const ForgotPassword = () => {
       newErrors.email = 'Email inválido';
     }
     
+    if (!formData.password) {
+      newErrors.password = 'La contraseña es requerida';
+    }
+    
     return newErrors;
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     const validationErrors = validateForm();
@@ -50,52 +54,26 @@ const ForgotPassword = () => {
     
     try {
       // TODO: Implementar llamada a API
-      console.log('Password reset request:', formData);
+      console.log('Login attempt:', formData);
       
       // Simular delay de API
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      setSuccess(true);
-      
-      // Redirigir después de 3 segundos
-      setTimeout(() => {
-        navigate('/login');
-      }, 3000);
+      // Redirigir después del login exitoso
+      navigate('/dashboard');
     } catch (error) {
-      setErrors({ general: 'Error al enviar el email. Por favor intente nuevamente.' });
+      setErrors({ general: 'Error al iniciar sesión. Por favor intente nuevamente.' });
     } finally {
       setLoading(false);
     }
   };
 
-  if (success) {
-    return (
-      <div className="auth-container">
-        <div className="auth-card">
-          <div className="success-container">
-            <div className="success-icon">✓</div>
-            <h2>Email Enviado</h2>
-            <p>
-              Hemos enviado instrucciones para restablecer tu contraseña a {formData.email}
-            </p>
-            <p className="text-muted">
-              Serás redirigido al inicio de sesión en unos segundos...
-            </p>
-            <Link to="/login" className="btn-secondary">
-              Ir a Iniciar Sesión
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="auth-container">
       <div className="auth-card">
         <div className="auth-header">
-          <h2>¿Olvidaste tu contraseña?</h2>
-          <p>No te preocupes, te enviaremos instrucciones para restablecerla</p>
+          <h2>Iniciar Sesión</h2>
+          <p>Bienvenido de vuelta</p>
         </div>
         
         <form onSubmit={handleSubmit} className="auth-form">
@@ -119,23 +97,52 @@ const ForgotPassword = () => {
             )}
           </div>
           
+          <div className="form-group">
+            <label htmlFor="password">Contraseña</label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              placeholder="••••••••"
+              className={errors.password ? 'error' : ''}
+            />
+            {errors.password && (
+              <span className="field-error">{errors.password}</span>
+            )}
+          </div>
+          
+          <div className="form-options">
+            <label className="checkbox-label">
+              <input type="checkbox" />
+              <span>Recordarme</span>
+            </label>
+            <Link to="/forgot-password" className="link">
+              ¿Olvidaste tu contraseña?
+            </Link>
+          </div>
+          
           <button 
             type="submit" 
             className="btn-primary"
             disabled={loading}
           >
-            {loading ? 'Enviando...' : 'Enviar Instrucciones'}
+            {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
           </button>
         </form>
         
         <div className="auth-footer">
-          <Link to="/login" className="link">
-            ← Volver a Iniciar Sesión
-          </Link>
+          <p>
+            ¿No tienes una cuenta?{' '}
+            <Link to="/register" className="link">
+              Regístrate
+            </Link>
+          </p>
         </div>
       </div>
     </div>
   );
 };
 
-export default ForgotPassword;
+export default Login;

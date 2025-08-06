@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import axios from 'axios';
-import Login from './components/auth/Login';
-import Register from './components/auth/Register';
-import ForgotPassword from './components/auth/ForgotPassword';
+import Login from './components/auth/Login.tsx';
+import Register from './components/auth/Register.tsx';
+import ForgotPassword from './components/auth/ForgotPassword.tsx';
 import './App.css';
 
 interface Message {
