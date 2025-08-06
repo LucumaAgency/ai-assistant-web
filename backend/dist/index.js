@@ -10,6 +10,7 @@ const openai_1 = __importDefault(require("openai"));
 const database_1 = __importDefault(require("./config/database"));
 const folders_1 = __importDefault(require("./routes/folders"));
 const chats_1 = __importDefault(require("./routes/chats"));
+const auth_1 = __importDefault(require("./routes/auth"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 const port = process.env.PORT || 3001;
@@ -46,6 +47,7 @@ app.get('/api/health', (req, res) => {
     });
 });
 // API Routes
+app.use('/api/auth', auth_1.default);
 app.use('/api', folders_1.default);
 app.use('/api', chats_1.default);
 app.post('/api/chat', async (req, res) => {

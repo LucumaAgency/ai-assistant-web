@@ -5,6 +5,7 @@ import OpenAI from 'openai';
 import pool from './config/database';
 import foldersRouter from './routes/folders';
 import chatsRouter from './routes/chats';
+import authRouter from './routes/auth';
 
 dotenv.config();
 
@@ -50,6 +51,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // API Routes
+app.use('/api/auth', authRouter);
 app.use('/api', foldersRouter);
 app.use('/api', chatsRouter);
 
