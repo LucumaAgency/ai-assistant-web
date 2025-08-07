@@ -7,7 +7,7 @@ const ForgotPassword = () => {
   const [formData, setFormData] = useState({
     email: ''
   });
-  const [errors, setErrors] = useState<any>({});
+  const [errors, setErrors] = useState<{[key: string]: string}>({});
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
@@ -26,7 +26,7 @@ const ForgotPassword = () => {
   };
 
   const validateForm = () => {
-    const newErrors = {};
+    const newErrors: {[key: string]: string} = {};
     
     if (!formData.email) {
       newErrors.email = 'El email es requerido';

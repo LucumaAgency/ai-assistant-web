@@ -10,7 +10,7 @@ const Register = () => {
     password: '',
     confirmPassword: ''
   });
-  const [errors, setErrors] = useState<any>({});
+  const [errors, setErrors] = useState<{[key: string]: string}>({});
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -28,7 +28,7 @@ const Register = () => {
   };
 
   const validateForm = () => {
-    const newErrors = {};
+    const newErrors: {[key: string]: string} = {};
     
     if (!formData.name) {
       newErrors.name = 'El nombre es requerido';
@@ -71,9 +71,22 @@ const Register = () => {
     try {
       const { confirmPassword, ...registerData } = formData;
       
+      // Debug logs
+      console.log('=== REGISTER DEBUG ===');
+      console.log('1. Starting registration request');
+      console.log('2. Register data:', registerData);
+      console.log('3. Request URL:', '/api/auth/register');
+      console.log('4. Full URL:', window.location.origin + '/api/auth/register');
+      
       // Crear promesa con timeout
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 segundos
+      const timeoutId = setTimeout(() => {
+        console.log('5. TIMEOUT: Request aborted after 10 seconds');
+        controller.abort();
+      }, 10000); // 10 segundos
+      
+      console.log('6. Sending fetch request...');
+      const startTime = Date.now();
       
       const response = await fetch('/api/auth/register', {
         method: 'POST',
@@ -85,24 +98,43 @@ const Register = () => {
       });
       
       clearTimeout(timeoutId);
+      const endTime = Date.now();
+      console.log(`7. Response received in ${endTime - startTime}ms`);
+      console.log('8. Response status:', response.status);
+      console.log('9. Response ok:', response.ok);
+      console.log('10. Response headers:', response.headers);
 
       const data = await response.json();
+      console.log('11. Response data:', data);
 
       if (data.success) {
+        console.log('12. Registration successful!');
         // Mostrar mensaje de éxito y redirigir al login
         alert('Registro exitoso! Por favor verifica tu email antes de iniciar sesión.');
         navigate('/login');
       } else {
+        console.log('13. Registration failed:', data.message);
         setErrors({ general: data.message || 'Error al registrarse' });
       }
     } catch (error: any) {
-      console.error('Register error:', error);
+      console.error('=== REGISTER ERROR ===');
+      console.error('Error type:', error.name);
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+      console.error('Full error object:', error);
+      
       if (error.name === 'AbortError') {
+        console.error('Request was aborted - timeout or manual abort');
         setErrors({ general: 'La solicitud tardó demasiado. Verifica tu conexión y vuelve a intentar.' });
+      } else if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+        console.error('Network error - could not connect to server');
+        setErrors({ general: 'No se pudo conectar con el servidor. Verifica que el backend esté funcionando.' });
       } else {
+        console.error('Unknown error type');
         setErrors({ general: 'Error al conectar con el servidor. Por favor intente nuevamente.' });
       }
     } finally {
+      console.log('=== END REGISTER DEBUG ===');
       setLoading(false);
     }
   };

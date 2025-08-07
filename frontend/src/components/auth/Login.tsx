@@ -8,7 +8,7 @@ const Login = () => {
     email: '',
     password: ''
   });
-  const [errors, setErrors] = useState<any>({});
+  const [errors, setErrors] = useState<{[key: string]: string}>({});
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -26,7 +26,7 @@ const Login = () => {
   };
 
   const validateForm = () => {
-    const newErrors = {};
+    const newErrors: {[key: string]: string} = {};
     
     if (!formData.email) {
       newErrors.email = 'El email es requerido';
