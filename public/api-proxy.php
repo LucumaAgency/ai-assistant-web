@@ -12,8 +12,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-// Configuración del backend
-$backend_url = 'http://localhost:3001';
+// Cargar configuración
+if (file_exists(__DIR__ . '/config.php')) {
+    require_once __DIR__ . '/config.php';
+    $backend_url = BACKEND_URL;
+} else {
+    // Configuración por defecto
+    $backend_url = 'http://localhost:3003';
+}
 
 // Obtener el path de la API desde el query string o request URI
 if (isset($_GET['path'])) {
