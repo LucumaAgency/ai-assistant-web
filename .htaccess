@@ -1,0 +1,14 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  
+  # Redirigir todas las peticiones /api al backend en el puerto 3001
+  RewriteRule ^api/(.*)$ http://localhost:3001/api/$1 [P,L]
+  
+  # Para React Router - redirigir todas las rutas al index.html
+  RewriteBase /
+  RewriteRule ^index\.html$ - [L]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{REQUEST_FILENAME} !-l
+  RewriteRule . /index.html [L]
+</IfModule>

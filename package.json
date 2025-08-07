@@ -4,6 +4,8 @@
   "description": "AI Voice Assistant Web Application",
   "scripts": {
     "install": "echo 'Root dependencies installed'",
+    "start": "node server.js",
+    "start:backend": "cd backend && npm start",
     "build": "npm run build:frontend && npm run build:backend",
     "build:frontend": "cd frontend && npm install && npm run build",
     "build:backend": "cd backend && npm install && npm run build",
@@ -12,6 +14,8 @@
   },
   "private": true,
   "dependencies": {
-    "axios": "^1.11.0"
+    "axios": "^1.11.0",
+    "express": "^5.1.0",
+    "http-proxy-middleware": "^3.0.5"
   }
 }

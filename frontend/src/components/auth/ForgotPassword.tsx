@@ -49,7 +49,7 @@ const ForgotPassword = () => {
     setLoading(true);
     
     try {
-      const response = await fetch('https://ai-assistant-web-backend.onrender.com/api/auth/forgot-password', {
+      const response = await fetch('/api/auth/forgot-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -71,7 +71,7 @@ const Register = () => {
     try {
       const { confirmPassword, ...registerData } = formData;
       
-      const response = await fetch('https://ai-assistant-web-backend.onrender.com/api/auth/register', {
+      const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
