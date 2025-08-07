@@ -2,15 +2,32 @@
 
 echo "Starting deployment..."
 
-# Copiar frontend construido a la raíz
+# Crear carpeta public si no existe
+if [ ! -d "public" ]; then
+    echo "Creating public directory..."
+    mkdir -p public
+fi
+
+# Copiar frontend construido a public
 if [ -d "frontend/dist" ]; then
-    echo "Copying frontend build files..."
-    cp -r frontend/dist/* ./
+    echo "Copying frontend build files to public..."
+    cp -r frontend/dist/* ./public/
 elif [ -d "client/dist" ]; then
-    echo "Copying client build files..."
-    cp -r client/dist/* ./
+    echo "Copying client build files to public..."
+    cp -r client/dist/* ./public/
 else
     echo "Warning: No dist folder found"
+fi
+
+# Copiar archivos PHP a public si existen
+if [ -f "api-mock.php" ]; then
+    cp api-mock.php ./public/
+fi
+if [ -f "api-proxy.php" ]; then
+    cp api-proxy.php ./public/
+fi
+if [ -f ".htaccess" ]; then
+    cp .htaccess ./public/
 fi
 
 # Buscar npm en diferentes ubicaciones
