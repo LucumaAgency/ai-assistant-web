@@ -1,8 +1,12 @@
 <IfModule mod_rewrite.c>
   RewriteEngine On
   
-  # Redirigir todas las peticiones /api al backend en el puerto 3001
-  RewriteRule ^api/(.*)$ http://localhost:3001/api/$1 [P,L]
+  # TEMPORAL: Usar mock PHP mientras se arregla Node.js
+  # Opción 1: Usar api-mock.php para pruebas (respuestas simuladas)
+  RewriteRule ^api/(.*)$ /api-mock.php?path=/api/$1 [L,QSA]
+  
+  # Opción 2: Usar api-proxy.php para intentar conectar con Node.js
+  # RewriteRule ^api/(.*)$ /api-proxy.php?path=/api/$1 [L,QSA]
   
   # Para React Router - redirigir todas las rutas al index.html
   RewriteBase /
@@ -10,5 +14,13 @@
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteCond %{REQUEST_FILENAME} !-l
+  RewriteCond %{REQUEST_URI} !^/api-proxy\.php
   RewriteRule . /index.html [L]
+</IfModule>
+
+# Configuración de seguridad
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
 </IfModule>
