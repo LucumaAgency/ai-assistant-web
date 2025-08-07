@@ -78,12 +78,12 @@ const Register = () => {
       console.log('3. Request URL:', '/api/auth/register');
       console.log('4. Full URL:', window.location.origin + '/api/auth/register');
       
-      // Crear promesa con timeout
+      // Crear promesa con timeout aumentado
       const controller = new AbortController();
       const timeoutId = setTimeout(() => {
-        console.log('5. TIMEOUT: Request aborted after 10 seconds');
+        console.log('5. TIMEOUT: Request aborted after 30 seconds');
         controller.abort();
-      }, 10000); // 10 segundos
+      }, 30000); // 30 segundos
       
       console.log('6. Sending fetch request...');
       const startTime = Date.now();
@@ -124,8 +124,8 @@ const Register = () => {
       console.error('Full error object:', error);
       
       if (error.name === 'AbortError') {
-        console.error('Request was aborted - timeout or manual abort');
-        setErrors({ general: 'La solicitud tardó demasiado. Verifica tu conexión y vuelve a intentar.' });
+        console.error('Request was aborted - timeout after 30 seconds');
+        setErrors({ general: 'El servidor no está respondiendo. Por favor intente más tarde o contacte al administrador.' });
       } else if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
         console.error('Network error - could not connect to server');
         setErrors({ general: 'No se pudo conectar con el servidor. Verifica que el backend esté funcionando.' });

@@ -73,6 +73,7 @@
   font-size: 16px;
   transition: all 0.3s ease;
   background: #fafafa;
+  color: #000000;
 }
 
 .form-group input:focus {
