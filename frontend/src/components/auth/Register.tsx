@@ -71,13 +71,20 @@ const Register = () => {
     try {
       const { confirmPassword, ...registerData } = formData;
       
+      // Crear promesa con timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 segundos
+      
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(registerData)
+        body: JSON.stringify(registerData),
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
 
       const data = await response.json();
 
@@ -88,9 +95,13 @@ const Register = () => {
       } else {
         setErrors({ general: data.message || 'Error al registrarse' });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Register error:', error);
-      setErrors({ general: 'Error al conectar con el servidor. Por favor intente nuevamente.' });
+      if (error.name === 'AbortError') {
+        setErrors({ general: 'La solicitud tardó demasiado. Verifica tu conexión y vuelve a intentar.' });
+      } else {
+        setErrors({ general: 'Error al conectar con el servidor. Por favor intente nuevamente.' });
+      }
     } finally {
       setLoading(false);
     }

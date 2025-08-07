@@ -2,8 +2,32 @@ import express, { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import User from '../models/User';
 import Token from '../models/Token';
+import pool from '../config/database';
 
 const router = express.Router();
+
+// Health check endpoint
+router.get('/health', async (req: Request, res: Response) => {
+  try {
+    // Intentar una consulta simple a la BD
+    const [result] = await pool.execute('SELECT 1 as test');
+    
+    res.json({
+      success: true,
+      status: 'ok',
+      database: 'connected',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('[AUTH] Database health check failed:', error);
+    res.status(500).json({
+      success: false,
+      status: 'error',
+      database: 'disconnected',
+      error: 'No se puede conectar a la base de datos'
+    });
+  }
+});
 
 // Configuración JWT
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
@@ -34,6 +58,7 @@ const generateAccessToken = (user: any): string => {
 // POST /api/auth/register - Registro de usuario
 // =============================================
 router.post('/register', async (req: Request, res: Response) => {
+  console.log('[AUTH] Register attempt:', req.body.email);
   try {
     const { email, password, name } = req.body;
 
@@ -82,7 +107,8 @@ router.post('/register', async (req: Request, res: Response) => {
     });
 
   } catch (error: any) {
-    console.error('Error en registro:', error);
+    console.error('[AUTH] Error en registro:', error);
+    console.error('[AUTH] Error details:', error.stack);
     
     if (error.message === 'El email ya está registrado') {
       return res.status(409).json({
@@ -102,6 +128,7 @@ router.post('/register', async (req: Request, res: Response) => {
 // POST /api/auth/login - Inicio de sesión
 // =============================================
 router.post('/login', async (req: Request, res: Response) => {
+  console.log('[AUTH] Login attempt:', req.body.email);
   try {
     const { email, password } = req.body;
     const ip_address = req.ip || req.connection.remoteAddress || '';
@@ -184,7 +211,8 @@ router.post('/login', async (req: Request, res: Response) => {
     });
 
   } catch (error) {
-    console.error('Error en login:', error);
+    console.error('[AUTH] Error en login:', error);
+    console.error('[AUTH] Stack trace:', error);
     res.status(500).json({
       success: false,
       message: 'Error al iniciar sesión'
