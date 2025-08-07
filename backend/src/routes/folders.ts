@@ -1,10 +1,11 @@
 import { Router, Request, Response } from 'express';
 import pool from '../config/database';
+import { authenticateToken } from '../middleware/auth';
 
 const router = Router();
 
-// Get all folders for a user
-router.get('/users/:userId/folders', async (req: Request, res: Response) => {
+// Get all folders for a user (protected)
+router.get('/users/:userId/folders', authenticateToken, async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
     const [rows] = await pool.execute(
@@ -18,8 +19,8 @@ router.get('/users/:userId/folders', async (req: Request, res: Response) => {
   }
 });
 
-// Create a new folder
-router.post('/folders', async (req: Request, res: Response) => {
+// Create a new folder (protected)
+router.post('/folders', authenticateToken, async (req: Request, res: Response) => {
   try {
     const { user_id, name, color, system_prompt } = req.body;
     const [result] = await pool.execute(
@@ -34,8 +35,8 @@ router.post('/folders', async (req: Request, res: Response) => {
   }
 });
 
-// Update a folder
-router.put('/folders/:id', async (req: Request, res: Response) => {
+// Update a folder (protected)
+router.put('/folders/:id', authenticateToken, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { name, color, system_prompt } = req.body;
@@ -50,8 +51,8 @@ router.put('/folders/:id', async (req: Request, res: Response) => {
   }
 });
 
-// Delete a folder
-router.delete('/folders/:id', async (req: Request, res: Response) => {
+// Delete a folder (protected)
+router.delete('/folders/:id', authenticateToken, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     await pool.execute('DELETE FROM folders WHERE id = ?', [id]);

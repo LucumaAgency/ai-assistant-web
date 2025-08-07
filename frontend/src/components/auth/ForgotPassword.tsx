@@ -49,20 +49,29 @@ const ForgotPassword = () => {
     setLoading(true);
     
     try {
-      // TODO: Implementar llamada a API
-      console.log('Password reset request:', formData);
-      
-      // Simular delay de API
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setSuccess(true);
-      
-      // Redirigir después de 3 segundos
-      setTimeout(() => {
-        navigate('/login');
-      }, 3000);
+      const response = await fetch('https://ai-assistant-web-backend.onrender.com/api/auth/forgot-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setSuccess(true);
+        
+        // Redirigir después de 3 segundos
+        setTimeout(() => {
+          navigate('/login');
+        }, 3000);
+      } else {
+        setErrors({ general: data.message || 'Error al enviar el email' });
+      }
     } catch (error) {
-      setErrors({ general: 'Error al enviar el email. Por favor intente nuevamente.' });
+      console.error('Forgot password error:', error);
+      setErrors({ general: 'Error al conectar con el servidor. Por favor intente nuevamente.' });
     } finally {
       setLoading(false);
     }

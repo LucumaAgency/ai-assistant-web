@@ -53,16 +53,30 @@ const Login = () => {
     setLoading(true);
     
     try {
-      // TODO: Implementar llamada a API
-      console.log('Login attempt:', formData);
-      
-      // Simular delay de API
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Redirigir después del login exitoso
-      navigate('/dashboard');
+      const response = await fetch('https://ai-assistant-web-backend.onrender.com/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Guardar tokens
+        localStorage.setItem('authToken', data.token);
+        localStorage.setItem('refreshToken', data.refreshToken);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        
+        // Redirigir al dashboard
+        window.location.href = '/dashboard';
+      } else {
+        setErrors({ general: data.message || 'Error al iniciar sesión' });
+      }
     } catch (error) {
-      setErrors({ general: 'Error al iniciar sesión. Por favor intente nuevamente.' });
+      console.error('Login error:', error);
+      setErrors({ general: 'Error al conectar con el servidor. Por favor intente nuevamente.' });
     } finally {
       setLoading(false);
     }

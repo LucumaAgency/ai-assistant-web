@@ -69,16 +69,28 @@ const Register = () => {
     setLoading(true);
     
     try {
-      // TODO: Implementar llamada a API
-      console.log('Register attempt:', formData);
+      const { confirmPassword, ...registerData } = formData;
       
-      // Simular delay de API
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Redirigir después del registro exitoso
-      navigate('/login');
+      const response = await fetch('https://ai-assistant-web-backend.onrender.com/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(registerData)
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Mostrar mensaje de éxito y redirigir al login
+        alert('Registro exitoso! Por favor verifica tu email antes de iniciar sesión.');
+        navigate('/login');
+      } else {
+        setErrors({ general: data.message || 'Error al registrarse' });
+      }
     } catch (error) {
-      setErrors({ general: 'Error al registrarse. Por favor intente nuevamente.' });
+      console.error('Register error:', error);
+      setErrors({ general: 'Error al conectar con el servidor. Por favor intente nuevamente.' });
     } finally {
       setLoading(false);
     }
